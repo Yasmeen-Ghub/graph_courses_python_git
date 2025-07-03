@@ -618,11 +618,8 @@ life_exp_line_plot = px.line(
 
 #
 
-## Row 1 {height = 100%}
 
-### Column 1 {width=100%}
-
-![](image.png){width=50% height=100%}
+![](image.png)
 
 # HOME
 
@@ -807,11 +804,11 @@ This suggests that saving young lives is a fundamental driver of overall populat
 
 **Uneven Progress:** While the general trend is positive, the scatter plot also reveals that *some countries, particularly in Lower economic regions, still lag behind*, highlighting areas where the cycle of health improvement is yet to fully take hold.
 
-**Malawi** rerded the highest absolute gain in life expectancy from 2000 to 2024, increasing by 21 years, one of the fastest improvements globally.
+**Malawi** recorded the highest absolute gain in life expectancy from 2000 to 2024, increasing by 21 years, one of the fastest improvements globally.
 
 **Rwanda** reduced child mortality by 85.5% between 2000 and 2024, the fastest improvement among all countries in the dataset.
 
-Both appear in the top 10 for life expectancy gains and child mortality reductions. Similarly, **Japan, Hong-Kong China, Iceland and Norway** appear in top 10 of longest living nations and champions of child health.
+Both countries appear in the top 10 for life expectancy gains and child mortality reductions. Similarly, **Japan, Hong-Kong China, Iceland and Norway** appear in top 10 of longest living nations and top child survival nations.
 
 This supports a clear link: **where child survival improves, overall life expectancy rises**. 
 
