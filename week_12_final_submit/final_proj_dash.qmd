@@ -1,0 +1,781 @@
+---
+title: EXPLORING THE ECONOMIC ROOTS OF SURVIVAL INEQUALITY
+author: YASMEEN ADENIYI
+format: dashboard
+---
+
+```{python}
+import plotly.express as px
+import pandas as pd
+import numpy as np
+pd.options.mode.copy_on_write = True
+```
+
+
+```{python}
+# Import data
+child_mortality = pd.read_csv(
+    "data/child_mortality_0_5_year_olds_dying_per_1000_born.csv"
+)
+
+life_exp = pd.read_csv("data/lex.csv")
+
+gdp_data = pd.read_csv("data/gdp_pcap.csv")
+```
+
+
+```{python}
+# change child mortality dataset to long format
+child_mortality_long = pd.melt(
+    child_mortality, id_vars=["country"], var_name="year", value_name="child_death"
+)
+
+child_mortality_long["year"] = child_mortality_long["year"].astype(int)
+
+
+# change to life expectancy long format
+life_exp_long = pd.melt(
+    life_exp, id_vars=["country"], var_name="year", value_name="life_expect"
+)
+life_exp_long["year"] = life_exp_long["year"].astype(int)
+
+
+# change GDP data to long format
+gdp_data_long = pd.melt(
+    gdp_data, id_vars=["country"], var_name="year", value_name="gdp_per_cap"
+)
+gdp_data_long["year"] = gdp_data_long["year"].astype(int)
+```
+
+
+```{python}
+# Subset for 2000 to 2024
+child_mortality_mini = child_mortality_long[
+    (child_mortality_long["year"] >= 2000) & (child_mortality_long["year"] <= 2024)
+]
+
+
+life_exp_mini = life_exp_long[
+    (life_exp_long["year"] >= 2000) & (life_exp_long["year"] <= 2024)
+]
+
+
+gdp_data_mini = gdp_data_long[
+    (gdp_data_long["year"] >= 2000) & (gdp_data_long["year"] <= 2024)
+]
+```
+
+
+```{python}
+# create a function to remove the "k"s in the gdp
+def gdp_formatter(gdp):
+    # ensure all "gdp_per_cap" entry have the same format, small letter and no space
+    gdp_str = str(gdp).lower().strip()
+    # state the condition for conversion
+    if "k" in gdp_str:
+        return float(gdp_str.replace("k", "")) * 1000
+    else:
+        return float(gdp_str)
+
+
+# vectorise the function
+gdp_formatter_vec = np.vectorize(gdp_formatter)
+
+# Apply function to the data frame
+gdp_data_mini["gdp_p_cap"] = gdp_formatter_vec(gdp_data_mini["gdp_per_cap"])
+
+# Drop the existing column
+gdp_data_mini.drop(columns=["gdp_per_cap"], inplace=True)
+
+```
+
+
+```{python}
+#  For data merging check mistmatches in country
+l_exp = set(life_exp_mini["country"].unique())
+
+gdp = set(gdp_data_mini["country"].unique())
+
+missing_country_in_gdp = l_exp - gdp
+missing_country_in_l_exp = gdp - l_exp
+
+# Check the missing country
+Liechtenstein = life_exp_mini.query("country == 'Liechtenstein'")
+
+# combine dataset, use inner to exclude liechtenstein
+life_exp_gdp = pd.merge(gdp_data_mini, life_exp_mini, how="inner")
+
+# Create sets of countries before merging child mortality data
+child_m = set(child_mortality_mini["country"].unique())
+l_exp_gdp = set(life_exp_gdp["country"].unique())
+
+missing_country_in_child_m = l_exp_gdp - child_m
+missing_country_in_l_exp_gdp = child_m - l_exp_gdp
+
+# combine dataset, use inner to exclude the two countries
+l_exp_gdp_mortality = pd.merge(child_mortality_mini, life_exp_gdp, how="inner")
+```
+
+
+
+```{python}
+# define function to categorise GDP
+def gdp_category(gdp):
+    if gdp <= 1145:
+        return "LIC"
+    if gdp <= 4515:
+        return "LMIC"
+    if gdp <= 14005:
+        return "UMIC"
+    if gdp > 14005:
+        return "HIC"
+    else:
+        return "unknown"
+
+
+# vectorise the function
+gdp_category_vec = np.vectorize(gdp_category)
+
+# use most recent year GDP to categorise countries
+latest_gdp = l_exp_gdp_mortality.query("year == 2024")
+
+# Apply fucntion to the latest GDP only
+latest_gdp["economic_region"] = gdp_category_vec(latest_gdp["gdp_p_cap"])
+
+# Create mapping: subset country and gdp_category only
+country_gdp_cat = latest_gdp[["country", "economic_region"]]
+
+# Merge subset to the combined data
+life_mortality_gdp = pd.merge(
+    l_exp_gdp_mortality, country_gdp_cat, on="country", how="left"
+)
+
+
+# While plotting I observe an error, a country with 0 life expectancy
+# print(life_mortality_gdp.query("country == 'Hong Kong, China' and year == 2024"))
+
+# Search online to update it
+life_mortality_gdp.loc[
+    (life_mortality_gdp["country"] == "Hong Kong, China")
+    & (life_mortality_gdp["year"] == 2024),
+    "life_expect",
+] = 85.42
+
+# check update
+# life_mortality_gdp.query("country == 'Hong Kong, China' and year == 2024")
+
+# save the clean data
+life_mortality_gdp.to_csv("socioeconomic_health_data.csv", index=False)
+
+```
+
+
+```{python}
+# import clean data for analysis
+life_mortality_gdp = pd.read_csv("socioeconomic_health_data.csv ")
+
+
+# Filter the data to 2024
+life_mortality_gdp_2024 = life_mortality_gdp.query("year == 2024")
+
+# 2024 Average Global Life Expectancy
+avg_lexp_2024 = round(life_mortality_gdp_2024["life_expect"].mean(), 1)
+
+
+# Calculate the percentage change in Global Life expectancy
+# subset 2000
+life_mortality_gdp_2000 = life_mortality_gdp.query("year == 2000")
+
+# Find the average
+avg_lexp_2000 = life_mortality_gdp_2000["life_expect"].mean()
+
+# calculate overall percentage change
+lexp_percent_change = round(((avg_lexp_2024 - avg_lexp_2000) / avg_lexp_2000) * 100, 2)
+```
+
+
+```{python}
+
+# Average life expectancy in each country, 2024
+country_avg_lexp_2024 = (
+    life_mortality_gdp_2024.groupby("country")["life_expect"].mean().reset_index()
+)
+
+# Average life expectancy in each country, 2000
+country_avg_lexp_2000 = (
+    life_mortality_gdp_2000.groupby("country")["life_expect"].mean().reset_index()
+)
+
+# Rename columns for clarity before merging
+country_avg_lexp_2000 = country_avg_lexp_2000.rename(
+    columns={"life_expect": "life_expect_2000"}
+)
+country_avg_lexp_2024 = country_avg_lexp_2024.rename(
+    columns={"life_expect": "life_expect_2024"}
+)
+
+# Merge the two dataframes
+life_exp_change = pd.merge(country_avg_lexp_2000, country_avg_lexp_2024, on="country")
+
+# Calculate change in life expectancy for each country
+life_exp_change["change_lexp"] = (
+    life_exp_change["life_expect_2024"] - life_exp_change["life_expect_2000"]
+)
+
+# Top fastest improving country in life expectancy
+top_improvers_lexp = life_exp_change.sort_values(
+    by="change_lexp", ascending=False
+).head(10)
+
+# Top worse country in life expectancy
+top_worseners_lexp = life_exp_change.sort_values(by="change_lexp").head(10)
+
+# Identify the fastest improving country
+fastest_top_improvers_lexp_value = top_improvers_lexp["change_lexp"].iloc[0]
+```
+
+
+```{python}
+# bar chart of the top 10 improving country
+top_improvers_lexp_bar = px.bar(
+    top_improvers_lexp,
+    x="change_lexp",
+    y="country",
+    text_auto=".2f",
+    color="country",
+    labels={"country": "Country", "change_lexp": "Increase From 2000 (years)"},
+    title="Top Life Expectancy Gains",
+).update_layout(showlegend=False)
+
+# bar chart of the least 10 improving country
+least_improvers_lexp_bar = px.bar(
+    top_worseners_lexp,
+    x="change_lexp",
+    y="country",
+    text_auto=".2f",
+    color="country",
+    labels={"country": "Country", "change_lexp": "Increase From 2000 (years)"},
+    title="Least Life Expectancy Gains",
+).update_layout(showlegend=False)
+
+
+# Make the map of life expectancy for 2024
+life_exp_map = (
+    px.choropleth(
+        life_mortality_gdp_2024,
+        locations="country",
+        locationmode="country names",
+        color="life_expect",
+        hover_name="country",
+        hover_data=["economic_region"],
+        color_continuous_scale="Blues",
+        title="Life Expectancy by Country (2024)",
+        labels={"life_expect": "Life Expectancy(years)"},
+    )
+).update_layout(coloraxis_showscale=False)
+
+
+# calculate average life expectancy in each region for each year
+avg_life_exp_by_region = (
+    life_mortality_gdp.groupby(["year", "economic_region"])["life_expect"]
+    .mean()
+    .reset_index()
+)
+
+# Plot life expectancy trend line
+life_exp_trend = px.line(
+    avg_life_exp_by_region,
+    x="year",
+    y="life_expect",
+    color="economic_region",
+    symbol="economic_region",
+    title="Average Life Expectancy Trend By Region",
+    labels={
+        "life_expect": "Life Expectancy (years)",
+        "economic_region": "Economic Region",
+        "year": "Year",
+    },
+).update_layout(showlegend=False)
+
+
+# Make box plot of life expectancy over years
+life_exp_box = (
+    px.box(
+        life_mortality_gdp,
+        x="economic_region",
+        y="life_expect",
+        range_y=[40, 90],
+        points="all",
+        animation_frame="year",
+        title="Distributions of Life Expectancy",
+        labels={
+            "life_expect": "Life expectancy (years)",
+            "economic_region": "Economic Region",
+        },
+    )
+    .update_layout(height=600, showlegend=False)
+    .update_traces(line=dict(color="#4682b4"))
+)
+
+
+# Caluculate the average life expectancy
+avg_life_expectancy = (
+    life_mortality_gdp.groupby("economic_region")["life_expect"].mean().reset_index()
+)
+
+# Make a bar plot of average life expectancy
+life_exp_bar = px.bar(
+    avg_life_expectancy,
+    y="economic_region",
+    x="life_expect",
+    color="economic_region",
+    text_auto=".2f",
+    title="Average Life Expectancy",
+    labels={
+        "life_expect": "Life expectancy (years)",
+        "economic_region": "Economic Region",
+    },
+).update_layout(showlegend=False)
+```
+
+
+
+```{python}
+# Change in Global Child Mortality
+# Average Child Mortality in 2024
+avg_child_mortality_2024 = round(life_mortality_gdp_2024["child_death"].mean(), 1)
+
+# Average child mortality in 2000
+avg_child_mortality_2000 = life_mortality_gdp_2000["child_death"].mean()
+
+# Calculate the overall child change mortality 
+child_mortality_percent_change = round(
+    ((avg_child_mortality_2000 - avg_child_mortality_2024) / avg_child_mortality_2000) * 100,
+    2,
+)
+```
+
+
+```{python}
+# Average child mortality in each country, 2024
+country_avg_child_mortality_2024 = (
+    life_mortality_gdp_2024.groupby("country")["child_death"].mean().reset_index()
+)
+
+# Average child mortality in each country, 2000
+country_avg_child_mortality_2000 = (
+    life_mortality_gdp_2000.groupby("country")["child_death"].mean().reset_index()
+)
+
+# Rename columns for clarity before merging
+country_avg_child_mortality_2000 = country_avg_child_mortality_2000.rename(
+    columns={"child_death": "child_death_2000"}
+)
+country_avg_child_mortality_2024 = country_avg_child_mortality_2024.rename(
+    columns={"child_death": "child_death_2024"}
+)
+
+# Merge the two dataframes
+country_avg_child_mortality = pd.merge(
+    country_avg_child_mortality_2000, country_avg_child_mortality_2024, on="country"
+)
+
+# Calculate percentage change in child mortality for each country
+country_avg_child_mortality["change_percent"] = (
+    (
+        country_avg_child_mortality["child_death_2000"]
+        - country_avg_child_mortality["child_death_2024"]
+    )
+    / country_avg_child_mortality["child_death_2000"]
+) * 100
+
+
+country_avg_child_mortality["change_percent"] = round(
+    country_avg_child_mortality["change_percent"], 1
+)
+
+# Top and worse countries
+top_cm_improvers = country_avg_child_mortality.sort_values(
+    by="change_percent", ascending=False
+).head(10)
+
+top_cm_worseners = country_avg_child_mortality.sort_values(by="change_percent").head(10)
+
+
+# Identify the topmost improving country in  child mortality
+topmost_cm_improver_val = top_cm_improvers["change_percent"].iloc[0]
+```
+
+
+```{python}
+# bar chart of the top 10 improving country in child mortality
+top_cm_improvers_bar = px.bar(
+    top_cm_improvers,
+    x="change_percent",
+    y="country",
+    color="country",
+    text_auto=".2f",
+    labels={"country": "Country", "change_percent": "Percentage Decrease Since 2000"},
+    title="Best Child Mortality Reductions",
+).update_layout(showlegend=False)
+
+
+# make map for child mortality in 2024
+child_mortality_map = (
+    px.choropleth(
+        life_mortality_gdp_2024,
+        locations="country",
+        locationmode="country names",
+        color="child_death",
+        hover_name="country",
+        hover_data=["economic_region"],
+        color_continuous_scale="blues_r",
+        title="Child Mortality by Country (2024)",
+        labels={
+            "child_death": "Child Mortality per '000",
+            "country": "Country",
+            "economic_region": "Economic Region",
+        },
+    )
+).update_layout(coloraxis_showscale=False)
+
+
+# Calculate the average child mortality for each economic region over time
+avg_child_mortality_by_region = (
+    life_mortality_gdp.groupby(["year", "economic_region"])["child_death"]
+    .mean()
+    .reset_index()
+)
+
+child_mortality_trend = (
+    px.line(
+        avg_child_mortality_by_region,
+        x="year",
+        y="child_death",
+        color="economic_region",
+        symbol="economic_region",
+        title="Average Child Mortality Trend By Regions",
+        labels={
+            "child_death": "Child Mortality per '000",
+            "economic_region": "Economic Region",
+            "year": "Year",
+        },
+    )
+).update_layout(showlegend=False)
+
+
+# Boxplot of child mortality across the years
+child_mortality_box = (
+    px.box(
+        life_mortality_gdp,
+        x="economic_region",
+        y="child_death",
+        animation_frame="year",
+        title="Distributions of Child Mortality",
+        labels={
+            "country": "Country",
+            "economic_region": "Economic Region",
+            "child_death": "Child Mortality per '000",
+        },
+    )
+    .update_layout(height=600, showlegend=False)
+    .update_traces(line=dict(color="#4682b4"))
+)
+
+
+# Barchart of the average child mortality across Countries in Diferrent Economy Category
+avg_child_mortality = (
+    life_mortality_gdp.groupby("economic_region")["child_death"].mean().reset_index()
+)
+
+# Make a bar plot of average child mortality
+child_mortality_bar = px.bar(
+    avg_child_mortality,
+    y="economic_region",
+    x="child_death",
+    color="economic_region",
+    text_auto=".2f",
+    title="Average Child Mortality Across Different Economic Regions",
+    labels={
+        "country": "Country",
+        "economic_region": "Economic Region",
+        "child_death": "Child Mortality (<5 years, per '000 Births)",
+    },
+).update_layout(showlegend=False)
+```
+
+
+
+```{python}
+# Scatter plot of life expectancy vs child mortality
+life_mortality_scatter = px.scatter(
+    life_mortality_gdp,
+    y="child_death",
+    x="life_expect",
+    color="economic_region",
+    animation_frame="year",
+    labels={
+        "country": "Country",
+        "economic_region": "Economic Region",
+        "child_death": "Child Mortality per '000",
+        "life_expect": "Life Expectancy (years)",
+    },
+    title="Life Expectancy Vs. Child Mortality",
+).update_layout(showlegend=False)
+
+
+# Line Plot: Caluculate the average child mortality for each year
+year_avg_child_mortality = (
+    life_mortality_gdp.groupby("year")["child_death"].mean().reset_index()
+)
+
+# Caluculate the average life expectancy for each year
+year_avg_life_exp = (
+    life_mortality_gdp.groupby("year")["life_expect"].mean().reset_index()
+)
+
+
+child_mortality_line_plot = px.line(
+    year_avg_child_mortality,
+    x="year",
+    y="child_death",
+    labels={"child_death": "Child Mortality per '000", "year": "Year"},
+    title="Overall Average Child Mortality Trend",
+).update_traces(line=dict(color="red"))
+
+
+life_exp_line_plot = px.line(
+    year_avg_life_exp,
+    x="year",
+    y="life_expect",
+    labels={"life_expect": "Life Expectancy (years)", "year": "Year"},
+    title="Overall Average Life Expectancy Trend",
+)
+```
+
+
+# HOME
+
+**Welcome**
+
+ Step into an interactive exploration of the profound transformations in global health over the past two decades. This dashboard unveils the powerful, interconnected stories of life expectancy and child mortality from 2000 to 2024.
+
+**Dive in to discover:**
+
+
+**The Miracle of Longevity:** Witness the remarkable surge in human lifespan across the globe, driven by breakthroughs in health and development.
+
+**A Generation Saved:** Explore the dramatic decline in child deaths, as result of global efforts that have protected millions of young lives.
+
+**The Foundational Link:** Experience how these two critical indicators are linked, revealing that the survival of our youngest directly underpins the health and prosperity of entire nations.
+
+**Beyond the Averages:** Compare progress across different economic regions and identify the countries leading the charge in health improvement, or lagging on health key Indicators.
+
+**The dashboard is structured into five key pages:**
+
+1. Life Expectancy distribution and disparities
+
+2. Child Mortality distribution and survival gains
+
+3. Regional trends characterised by economic Status and its influence on both metrics
+
+4. The link between these two health outcomes
+
+5. Data sources and definitions
+
+
+# LIFE EXPECTANCY
+
+## Row 1 {height="40%"}
+
+::: {.valuebox icon ="heart-pulse" color = "#4682b4" title="Global Life Expectancy"}
+
+`{python} str(avg_lexp_2024)`
+
+2024 Average
+:::
+
+::: {.valuebox icon ="graph-up-arrow" color = "#b0c4de" title="Percentage Increase"}
+
+`{python} str(lexp_percent_change) + "%"`
+
+Since 2000
+:::
+
+::: {.valuebox icon ="trophy" color = "#4682b4" title="Fastest Improving Country"}
+
+`{python} str(fastest_top_improvers_lexp_value)`
+
+Malawi
+:::
+
+## Row 2 {height="60%"}
+
+### column 1 {width "50%"}
+
+```{python}
+life_exp_map
+```
+
+### column 2 {width = "50%"}
+
+```{python}
+life_exp_box
+```
+
+# CHILD MORTALITY
+
+## Row 1 {height="40%"}
+
+::: {.valuebox icon ="heartbreak" color = "#4682b4" title="Global Child Mortality"}
+
+`{python} str(avg_child_mortality_2024)`
+
+Per '000 Births
+:::
+
+
+::: {.valuebox icon ="box-arrow-down-right" color = "#b0c4de" title="Percentage Decrease "}
+
+`{python} str(child_mortality_percent_change) + "%"`
+
+Since 2000
+:::
+
+
+::: {.valuebox icon ="award" color = "#4682b4" title="Biggest Child Survival Gain"}
+
+`{python} str(topmost_cm_improver_val) + "%"`
+
+Rwanda
+:::
+
+## Row 2 {height="60%"}
+
+
+### column 1 {width="50%"}
+
+```{python}
+child_mortality_map
+```
+
+
+### column 2 {width = "50%"}
+
+```{python}
+child_mortality_box
+```
+
+
+# REGIONAL TRENDS
+
+## Row 1 {height = "70%"}
+
+### column 1 {width = "50%"}
+
+```{python}
+life_exp_trend
+```
+
+### column 2 {width="50%"}
+
+```{python}
+child_mortality_trend
+```
+
+
+## Row 2 {height = "30%"}
+
+### column 1 {width = "40%"}
+
+```{python}
+life_exp_line_plot
+```
+
+### column 2 {width = "40%"}
+
+```{python}
+child_mortality_line_plot
+```
+
+### column 3 {width = "20%"}
+
+**Key Insights**
+
+Over the past 20 years, life expectancy has increased and child mortality has declined worldwide.
+
+In 2020–2021, life expectancy dipped sharply across all economic regions, likely due to the impact of COVID-19. 
+
+No region was immune to this decline, indicating the effect a pandemic can have on population health. By 2023–2024, signs of recovery are visible.
+
+Meanwhile, child mortality continued to fall, highlighting the different vulnerabilities of age groups and showing the strength of basic health services in protecting young lives even during a global crisis.
+
+
+# INTERTWINED PATH
+
+## Row 1 {height = "70%"}
+
+### Column 1 {width ="70%"}
+
+```{python}
+life_mortality_scatter
+```
+
+### Column 2 {width = "30%"}
+
+**Key Insights: The Foundational Link**
+
+This tab explores the profound connection between how long people live and the survival rates of young children:
+
+**A Clear Correlation:** The animated scatter plot claerly demonstrates an inverse relationship: 
+
+**As child mortality rates decrease, life expectancy generally increases across regions and over time.** 
+
+This suggests that saving young lives is a fundamental driver of overall population longevity.
+
+
+**Uneven Progress:** While the general trend is positive, the scatter plot also reveals that *some countries, particularly in Lower economic regions, still lag behind*, highlighting areas where the cycle of health improvement is yet to fully take hold.
+
+**Rwanda and Malawi** appear in both the top 10 for life expectancy gains and child mortality reductions. This supports a clear link: *where child survival improves, overall life expectancy rises*. 
+
+## Row 2 {height = "30%"}
+
+### column 1{width = "50%"}
+
+```{python}
+top_improvers_lexp_bar
+```
+
+
+### column 2 {width  = "50%"}
+
+```{python}
+top_cm_improvers_bar
+```
+
+
+# DATA
+
+## Row 1 
+
+**Data Description**
+
+This dashboard utilizes a comprehensive dataset derived from Gapminder's public data repository. It focuses on three key socio-economic and health indicators:
+
+**Life Expectancy at Birth:** The average number of years a newborn infant would live if patterns of mortality at the time of its birth were to stay the same throughout its life. (Source: Gapminder's Life Expectancy data)
+
+**Child Mortality (0-5 years):** The number of deaths of children under five years of age per 1,000 live births. This is a critical indicator of a country's health and development. (Source: Gapminder's Child   Mortality data)
+
+**GDP per Capita (PPP, International $):** Gross Domestic Product per person, adjusted for purchasing power parity. Used to categorize countries into economic regions (Low, Lower-Middle, Upper-Middle, and High Income). (Source: Gapminder's GDP per Capita data)
+
+Link to the
+[Gapminder Data Repository](https://www.gapminder.org/data/)
+
+
+The data has been cleaned, transformed into a long format, and merged to facilitate comparative analysis across countries and over the period 2000 to 2024. Countries are categorized into economic regions based on their 2024 GDP per capita according to World Bank thresholds.
+
+**Download Cleaned Data**
+
+You can download the full, cleaned dataset used in this dashboard as a CSV file:
+
+[Download Cleaned Data (CSV)](week_12_final_submit/socioeconomic_health_data.csv)
