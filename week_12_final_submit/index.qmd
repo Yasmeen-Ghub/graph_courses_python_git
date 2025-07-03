@@ -8,6 +8,7 @@ format: dashboard
 import plotly.express as px
 import pandas as pd
 import numpy as np
+import itables
 pd.options.mode.copy_on_write = True
 ```
 
@@ -152,17 +153,23 @@ life_mortality_gdp = pd.merge(
 
 
 # While plotting I observe an error, a country with 0 life expectancy
-# print(life_mortality_gdp.query("country == 'Hong Kong, China' and year == 2024"))
+# print(life_mortality_gdp.query("country == 'Hong Kong, China'"))
 
 # Search online to update it
-life_mortality_gdp.loc[
-    (life_mortality_gdp["country"] == "Hong Kong, China")
-    & (life_mortality_gdp["year"] == 2024),
-    "life_expect",
-] = 85.42
+years_to_update = [2024, 2023, 2022, 2021, 2020]
+new_life_expectancies = [85.42, 85.25, 83.66, 85.53, 85.5]
+
+update_map = pd.Series(new_life_expectancies, index=years_to_update)
+
+for year, value in update_map.items():
+    life_mortality_gdp.loc[
+        (life_mortality_gdp["country"] == "Hong Kong, China")
+        & (life_mortality_gdp["year"] == year),
+        "life_expect",
+    ] = value
 
 # check update
-# life_mortality_gdp.query("country == 'Hong Kong, China' and year == 2024")
+#life_mortality_gdp.query("country == 'Hong Kong, China'")
 
 # save the clean data
 life_mortality_gdp.to_csv("socioeconomic_health_data.csv", index=False)
@@ -740,12 +747,23 @@ This suggests that saving young lives is a fundamental driver of overall populat
 
 ## Row 2 {height = "30%"}
 
-### column 1{width = "50%"}
+### column 1{.tabset width = "50%"}
+
+::: {.panel-tabset}
+
+#### Tab 1
 
 ```{python}
 top_improvers_lexp_bar
 ```
 
+#### Tab 2
+
+```{python}
+top_improvers_lexp_bar
+```
+
+:::
 
 ### column 2 {width  = "50%"}
 
@@ -778,4 +796,6 @@ The data has been cleaned, transformed into a long format, and merged to facilit
 
 You can download the full, cleaned dataset used in this dashboard as a CSV file:
 
-[Download Cleaned Data (CSV)](https://github.com/Yasmeen-Ghub/graph_courses_python_git/blob/main/week_12_final_submit/socioeconomic_health_data.csv)
+```{python}
+itables.show(life_mortality_gdp, caption="Cleaned Dataset", buttons=["csvHtml5"])
+```
