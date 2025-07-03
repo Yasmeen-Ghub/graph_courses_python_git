@@ -618,7 +618,6 @@ life_exp_line_plot = px.line(
 
 #
 
-
 ![](image.png)
 
 # HOME
