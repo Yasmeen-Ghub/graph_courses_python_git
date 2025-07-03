@@ -254,16 +254,25 @@ top_improvers_lexp_bar = px.bar(
     title="Top Life Expectancy Gains",
 ).update_layout(showlegend=False)
 
-# bar chart of the least 10 improving country
-least_improvers_lexp_bar = px.bar(
-    top_worseners_lexp,
-    x="change_lexp",
+
+# Longest Living Nations
+longest_living_nations = life_mortality_gdp_2024.sort_values(
+    by="life_expect", ascending=False
+).head(10)[["country", "life_expect"]]
+
+longest_living_nations_bar = px.bar(
+    longest_living_nations,
+    x="life_expect",
     y="country",
     text_auto=".2f",
     color="country",
-    labels={"country": "Country", "change_lexp": "Increase From 2000 (years)"},
-    title="Least Life Expectancy Gains",
+    labels={"country": "Country", "life_expect": "Life Expectancy (years)"},
+    title="Longest Living Nations",
 ).update_layout(showlegend=False)
+
+longest_living_nations_r = life_mortality_gdp_2024.sort_values(by="life_expect").head(
+    10
+)[["country", "life_expect"]]
 
 
 # Make the map of life expectancy for 2024
@@ -279,7 +288,14 @@ life_exp_map = (
         title="Life Expectancy by Country (2024)",
         labels={"life_expect": "Life Expectancy(years)"},
     )
-).update_layout(coloraxis_showscale=False)
+).update_layout(
+    coloraxis_colorbar=dict(
+        orientation="h",  # 'h' for horizontal
+        x=0.5,  # center it horizontally
+        xanchor="center",
+        y=-0.2,  # adjust vertical position
+    )
+)
 
 
 # calculate average life expectancy in each region for each year
@@ -302,7 +318,11 @@ life_exp_trend = px.line(
         "economic_region": "Economic Region",
         "year": "Year",
     },
-).update_layout(showlegend=False)
+).update_layout(
+    legend=dict(
+        orientation="h", entrywidth=70, yanchor="bottom", y=1.02, xanchor="right", x=1
+    )
+)
 
 
 # Make box plot of life expectancy over years
@@ -426,6 +446,27 @@ top_cm_improvers_bar = px.bar(
     title="Best Child Mortality Reductions",
 ).update_layout(showlegend=False)
 
+# Top Child Survival Nations
+child_survival_nations = life_mortality_gdp_2024.sort_values(
+    by="child_death",
+).head(
+    10
+)[["country", "child_death"]]
+
+child_survival_nations_bar = px.bar(
+    child_survival_nations,
+    x="child_death",
+    y="country",
+    text_auto=".2f",
+    color="country",
+    labels={"country": "Country", "child_death": "Child Mortality per '000"},
+    title="Top Child Survival Nations",
+).update_layout(showlegend=False)
+
+
+child_survival_nations_r = life_mortality_gdp_2024.sort_values(
+    by="child_death", ascending=False
+).head(10)[["country", "child_death"]]
 
 # make map for child mortality in 2024
 child_mortality_map = (
@@ -444,7 +485,14 @@ child_mortality_map = (
             "economic_region": "Economic Region",
         },
     )
-).update_layout(coloraxis_showscale=False)
+).update_layout(
+    coloraxis_colorbar=dict(
+        orientation="h",  # 'h' for horizontal
+        x=0.5,  # center it horizontally
+        xanchor="center",
+        y=-0.2,  # adjust vertical position
+    )
+)
 
 
 # Calculate the average child mortality for each economic region over time
@@ -468,7 +516,11 @@ child_mortality_trend = (
             "year": "Year",
         },
     )
-).update_layout(showlegend=False)
+).update_layout(
+    legend=dict(
+        orientation="h", entrywidth=70, yanchor="bottom", y=1.02, xanchor="right", x=1
+    )
+)
 
 
 # Boxplot of child mortality across the years
@@ -528,7 +580,11 @@ life_mortality_scatter = px.scatter(
         "life_expect": "Life Expectancy (years)",
     },
     title="Life Expectancy Vs. Child Mortality",
-).update_layout(showlegend=False)
+).update_layout(
+    legend=dict(
+        orientation="h", entrywidth=70, yanchor="bottom", y=1.02, xanchor="right", x=1
+    )
+)
 
 
 # Line Plot: Caluculate the average child mortality for each year
@@ -560,6 +616,13 @@ life_exp_line_plot = px.line(
 )
 ```
 
+#
+
+## Row 1 {height = 100%}
+
+### Column 1 {width=100%}
+
+![](image.png){width=50% height=100%}
 
 # HOME
 
@@ -591,6 +654,7 @@ life_exp_line_plot = px.line(
 5. Data sources and definitions
 
 
+
 # LIFE EXPECTANCY
 
 ## Row 1 {height="40%"}
@@ -609,7 +673,7 @@ life_exp_line_plot = px.line(
 Since 2000
 :::
 
-::: {.valuebox icon ="trophy" color = "#4682b4" title="Fastest Improving Country"}
+::: {.valuebox icon ="trophy" color = "#4682b4" title="Biggest Life Expectancy Gain"}
 
 `{python} str(fastest_top_improvers_lexp_value)`
 
@@ -734,7 +798,7 @@ life_mortality_scatter
 
 This tab explores the profound connection between how long people live and the survival rates of young children:
 
-**A Clear Correlation:** The animated scatter plot claerly demonstrates an inverse relationship: 
+**A Clear Correlation:** The animated scatter plot clearly demonstrates an inverse relationship: 
 
 **As child mortality rates decrease, life expectancy generally increases across regions and over time.** 
 
@@ -743,7 +807,13 @@ This suggests that saving young lives is a fundamental driver of overall populat
 
 **Uneven Progress:** While the general trend is positive, the scatter plot also reveals that *some countries, particularly in Lower economic regions, still lag behind*, highlighting areas where the cycle of health improvement is yet to fully take hold.
 
-**Rwanda and Malawi** appear in both the top 10 for life expectancy gains and child mortality reductions. This supports a clear link: *where child survival improves, overall life expectancy rises*. 
+**Malawi** rerded the highest absolute gain in life expectancy from 2000 to 2024, increasing by 21 years, one of the fastest improvements globally.
+
+**Rwanda** reduced child mortality by 85.5% between 2000 and 2024, the fastest improvement among all countries in the dataset.
+
+Both appear in the top 10 for life expectancy gains and child mortality reductions. Similarly, **Japan, Hong-Kong China, Iceland and Norway** appear in top 10 of longest living nations and champions of child health.
+
+This supports a clear link: **where child survival improves, overall life expectancy rises**. 
 
 ## Row 2 {height = "30%"}
 
@@ -751,25 +821,37 @@ This suggests that saving young lives is a fundamental driver of overall populat
 
 ::: {.panel-tabset}
 
-#### Tab 1
+#### Most Improved countries
 
 ```{python}
 top_improvers_lexp_bar
 ```
 
-#### Tab 2
+#### Longest-Living Nations
 
 ```{python}
-top_improvers_lexp_bar
+longest_living_nations_bar
 ```
 
 :::
 
 ### column 2 {width  = "50%"}
 
+::: {.panel-tabset}
+
+#### Best Reductions
+
 ```{python}
 top_cm_improvers_bar
 ```
+
+#### Champions of Child Health
+
+```{python}
+child_survival_nations_bar
+```
+
+:::
 
 
 # DATA
