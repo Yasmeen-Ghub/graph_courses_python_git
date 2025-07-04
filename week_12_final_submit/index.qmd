@@ -624,18 +624,18 @@ life_exp_line_plot = px.line(
 
 **Welcome**
 
- Step into an interactive exploration of the profound transformations in global health over the past two decades. This dashboard unveils the powerful, interconnected stories of life expectancy and child mortality from 2000 to 2024.
+ Step into an interactive exploration of the profound transformations in global health over the past two decades. This dashboard unveils the powerful, interconnected stories of *life expectancy and child mortality from 2000 to 2024*.
 
 **Dive in to discover:**
 
 
-**The Miracle of Longevity:** Witness the remarkable surge in human lifespan across the globe, driven by breakthroughs in health and development.
+*The Miracle of Longevity:* Witness the remarkable surge in human lifespan across the globe, driven by breakthroughs in health and development.
 
-**A Generation Saved:** Explore the dramatic decline in child deaths, as result of global efforts that have protected millions of young lives.
+*A Generation Saved:* Explore the dramatic decline in child deaths, as result of global efforts that have protected millions of young lives.
 
-**The Foundational Link:** Experience how these two critical indicators are linked, revealing that the survival of our youngest directly underpins the health and prosperity of entire nations.
+*The Foundational Link:* Experience how these two critical indicators are linked, revealing that the survival of our youngest directly underpins the health and prosperity of entire nations.
 
-**Beyond the Averages:** Compare progress across different economic regions and identify the countries leading the charge in health improvement, or lagging on health key Indicators.
+*Beyond the Averages:* Compare progress across different economic regions and identify the countries leading the charge in health improvement, or lagging on health key Indicators.
 
 **The dashboard is structured into five key pages:**
 
@@ -643,7 +643,7 @@ life_exp_line_plot = px.line(
 
 2. Child Mortality distribution and survival gains
 
-3. Regional trends characterised by economic Status and its influence on both metrics
+3. Regional trends characterised by economic status and its influence on both metrics
 
 4. The link between these two health outcomes
 
