@@ -618,7 +618,9 @@ life_exp_line_plot = px.line(
 
 #
 
-![](image.png)
+### column {width = 100%}
+
+![](image.png){width=50% height=100%}
 
 # HOME
 
