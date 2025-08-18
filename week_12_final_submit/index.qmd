@@ -181,7 +181,6 @@ life_mortality_gdp.to_csv("socioeconomic_health_data.csv", index=False)
 # import clean data for analysis
 life_mortality_gdp = pd.read_csv("socioeconomic_health_data.csv ")
 
-
 # Filter the data to 2024
 life_mortality_gdp_2024 = life_mortality_gdp.query("year == 2024")
 
@@ -241,6 +240,16 @@ top_worseners_lexp = life_exp_change.sort_values(by="change_lexp").head(10)
 fastest_top_improvers_lexp_value = top_improvers_lexp["change_lexp"].iloc[0]
 ```
 
+```{python}
+'''
+px.line(
+    country_avg_lexp_2024,
+    y="life_expect_2024",
+    title="Trend Line",
+    labels={"life_expect_2024":"Counts"},
+)
+'''
+```
 
 ```{python}
 # bar chart of the top 10 improving country
